@@ -1,0 +1,26 @@
+spring:
+  datasource: 
+    url: jdbc:mysql://localhost:3306/emsDb?createDatabaseIfNotExist=true
+    username: root
+    password: 1qaz2wsx@
+    driverClassName: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+ 
+ 
+security:
+   oauth2:
+     resource:
+       token-info-uri: http://localhost:8191/oauth/check_token
+     client:  
+      client-id: web
+      client-secret: web
+     
+       
+server:
+  port: 8085        
+  
+ 
