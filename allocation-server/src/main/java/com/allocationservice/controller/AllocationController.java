@@ -52,6 +52,7 @@ public class AllocationController {
 
 	@RequestMapping( value = "allocation/employee/{id}" , method = RequestMethod.GET )
 	public List<Allocation> fetchAllByEid(@PathVariable Integer id) {
+
 		return allocationService.findByEid(id);
 		
 	}
