@@ -15,6 +15,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.provider.authentication.OAuth2AuthenticationDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -53,7 +55,29 @@ public class EmployeeServiceImp implements EmployeeService {
 //			
 //			
 // 			
-			return optional.get();
+			
+			// fetch project alllocation
+			RestTemplate restTemplate=new RestTemplate();
+					HttpHeaders httpHeaders=new HttpHeaders();
+
+					//extract token from context
+					OAuth2AuthenticationDetails oAuth2AuthenticationDetails =(OAuth2AuthenticationDetails)
+							SecurityContextHolder.getContext().getAuthentication().getDetails();
+
+					System.out.println(">>>>"+oAuth2AuthenticationDetails.getTokenValue());
+					httpHeaders.add("Authorization","bearer".concat(oAuth2AuthenticationDetails.getTokenValue()));
+
+					//
+					ResponseEntity<Allocation[]> responseEntity;
+					HttpEntity<String> httpEntity=new HttpEntity<>("",httpHeaders);
+					 responseEntity=restTemplate.exchange("http://localhost:9090/emscloud/allocation/employee/".
+							 concat(employee.getId().toString()),HttpMethod.GET,httpEntity, Allocation[].class);
+
+
+							 Employee employee1= optional.get();
+							 employee1.setAllocation(responseEntity.getBody());
+					return employee1;
+			//return optional.get();
 		}
 		else {
 			return null;

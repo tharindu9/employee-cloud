@@ -37,7 +37,7 @@ public class EmployeeController {
 	
 	@RequestMapping(value = "/employee" , method = RequestMethod.GET )
 	public List<Employee> fetchAllEmployee() {
-		System.out.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+		
 		return employeeService.fetchAllEmployee();
 		
 	}
