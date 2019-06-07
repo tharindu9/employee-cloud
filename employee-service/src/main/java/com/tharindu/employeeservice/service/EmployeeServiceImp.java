@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.provider.authentication.OAuth2Authent
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 import com.tharindu.employeeservice.modal.Allocation;
 import com.tharindu.employeeservice.modal.Employee;
 import com.tharindu.employeeservice.modal.Telephone;
@@ -29,7 +30,11 @@ import com.tharindu.employeeservice.repository.EmployeeRepository;
 public class EmployeeServiceImp implements EmployeeService {
 	
 	@Autowired
-	EmployeeRepository employeeService;
+	EmployeeRepository employeeRepository;
+	
+	@Autowired
+	RestTemplate restTemplate;
+	
 	 @Override
 	public Employee save(Employee employee) {
 		
@@ -37,53 +42,53 @@ public class EmployeeServiceImp implements EmployeeService {
 		 telephone.setEmployee(employee);
 		
 	}
-		return employeeService.save(employee);
+		return employeeRepository.save(employee);
 	}
 	 
 	public List<Employee> fetchAllEmployee(){
-		return employeeService.findAll();
+		return employeeRepository.findAll();
 	}
 	
-	public Employee fetchEmployee(Employee employee){
-		Optional<Employee>  optional = employeeService.findById(employee.getId());
-		if(optional.isPresent()) {
-//			RestTemplate restTemplate = new RestTemplate();
-//			HttpHeaders httpHeaders = new HttpHeaders();
-//		
-//			ResponseEntity<List<Allocation>> responseEntity;
-//			HttpEntity<String> entity = new HttpEntity<String>("",httpHeaders);
-//			
-//			
-// 			
-			
+	public Employee fetchEmployee(Employee employee) {
+		Optional<Employee> optionalEmployee = employeeRepository.findById(employee.getId());
+		if (optionalEmployee.isPresent()) {
 			// fetch project alllocation
-			RestTemplate restTemplate=new RestTemplate();
-					HttpHeaders httpHeaders=new HttpHeaders();
-
-					//extract token from context
-					OAuth2AuthenticationDetails oAuth2AuthenticationDetails =(OAuth2AuthenticationDetails)
-							SecurityContextHolder.getContext().getAuthentication().getDetails();
-
-					System.out.println(">>>>"+oAuth2AuthenticationDetails.getTokenValue());
-					httpHeaders.add("Authorization","bearer".concat(oAuth2AuthenticationDetails.getTokenValue()));
-
-					//
-					ResponseEntity<Allocation[]> responseEntity;
-					HttpEntity<String> httpEntity=new HttpEntity<>("",httpHeaders);
-					 responseEntity=restTemplate.exchange("http://localhost:9090/emscloud/allocation/employee/".
-							 concat(employee.getId().toString()),HttpMethod.GET,httpEntity, Allocation[].class);
+	//		RestTemplate restTemplate=new RestTemplate();
 
 
-							 Employee employee1= optional.get();
-							 employee1.setAllocation(responseEntity.getBody());
-					return employee1;
-			//return optional.get();
-		}
-		else {
+					 Employee employee1= optionalEmployee.get();
+					 Allocation[] allocation = fetchEmployeeAllocation(optionalEmployee.get());
+					 employee1.setAllocation(allocation);
+			return employee1;
+		}else {
 			return null;
 		}
 	}
 
+	@HystrixCommand(fallbackMethod = "fetchEmployeeAllocationFallBack")
+	public  Allocation[] fetchEmployeeAllocation(Employee employee){
+
+		HttpHeaders httpHeaders=new HttpHeaders();
+
+		//extract token from context
+		OAuth2AuthenticationDetails oAuth2AuthenticationDetails =(OAuth2AuthenticationDetails)
+				SecurityContextHolder.getContext().getAuthentication().getDetails();
+
+
+		httpHeaders.add("Authorization","bearer".concat(oAuth2AuthenticationDetails.getTokenValue()));
+
+
+		ResponseEntity<Allocation[]> responseEntity;
+		HttpEntity<String> httpEntity=new HttpEntity<>("",httpHeaders);
+		responseEntity=restTemplate.exchange("http://allocation-service/emscloud/allocations/".
+				concat(employee.getId().toString()),HttpMethod.GET,httpEntity, Allocation[].class);
+
+         return responseEntity.getBody();
+	}
+
+	public  Allocation[] fetchEmployeeAllocationFallBack(Employee employee) {
+		return new Allocation[1];
+	}
 
 	
 
